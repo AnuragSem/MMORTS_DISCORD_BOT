@@ -1,0 +1,17 @@
+# Ignore virtual environments and caches
+venv/
+__pycache__/
+*.pyc
+
+# Secrets and runtime data
+.env
+config.json
+events.json
+tips.json
+
+# Replit / local debug files
+.replit/
+*.log
+
+#files to ignore other than this
+bot_singlefile.py
