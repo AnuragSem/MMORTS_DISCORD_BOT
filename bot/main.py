@@ -1,6 +1,7 @@
 ﻿import discord
 from discord.ext import commands
 import os
+from keep_alive import keep_alive
 from bot.config_loader import TOKEN
 from bot.logger import setup_logging
 
@@ -35,4 +36,5 @@ async def main():
 
 if __name__ == "__main__":
     import asyncio
+    keep_alive()
     asyncio.run(main())
