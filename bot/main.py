@@ -1,12 +1,13 @@
-﻿import discord
+﻿import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import discord
 from discord.ext import commands
 import os
 from keep_alive import keep_alive
 from bot.config_loader import TOKEN
 from bot.logger import setup_logging
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 
 logger = setup_logging("main")
