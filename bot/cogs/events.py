@@ -221,6 +221,104 @@ class EventsCog(commands.Cog):
             fields=[("Details", info, False)], color=discord.Color.green()
         ))
 
+        # ───List All Events ─────────────────────────────────────────
+    @commands.command(name="listevents")
+    async def listevents(self, ctx):
+        gid = str(ctx.guild.id)
+        events = get_guild_events(self.all_events, gid)
+
+        if not events:
+            return await ctx.send(embed=make_embed(
+                title="📭 No Events Scheduled",
+                description="Use `!addevent` or `!schedulecountdown` to add events.",
+                color=discord.Color.blue()
+            ))
+
+        normal_events = []
+        countdown_events = []
+
+        for e in events:
+            if e.get("type") == "countdown":
+                countdown_events.append(e)
+            else:
+                normal_events.append(e)
+
+        desc = ""
+        if normal_events:
+            desc += "📆 **Weekly Events**\n"
+            for i, e in enumerate(normal_events, 1):
+                desc += f"`#{i}` 🔹 {e['day']} at {e['time']} — **{e['name']}**\n"
+
+        if countdown_events:
+            desc += "\n⏳ **Countdown Events**\n"
+            base = len(normal_events)
+            for i, e in enumerate(countdown_events, base + 1):
+                fire_at = datetime.datetime.fromisoformat(e['timestamp'])
+                offset = self.config['server_offsets'].get(gid, 0)
+                fire_at += datetime.timedelta(minutes=offset)
+                desc += f"`#{i}` 🔸 {fire_at.strftime('%A %H:%M')} — **{e['name']}**\n"
+
+        await ctx.send(embed=make_embed(
+            title="📝 Scheduled Events",
+            description=desc,
+            color=discord.Color.purple()
+        ))
+
+    # ─── Delete Events ─────────────────────────────────────────
+    #by name
+    @commands.command(name="deleteevent")
+    async def deleteevent(self, ctx, *, name: str = None):
+        if not name:
+            return await ctx.send(embed=make_embed(
+                title="❌ Missing Event Name",
+                description="Usage: `!deleteevent Event Name`",
+                color=discord.Color.red()
+            ))
+
+        gid = str(ctx.guild.id)
+        events = get_guild_events(self.all_events, gid)
+        before_count = len(events)
+        self.all_events[gid] = [e for e in events if e['name'].lower() != name.lower()]
+        after_count = len(self.all_events[gid])
+
+        if before_count == after_count:
+            return await ctx.send(embed=make_embed(
+                title="⚠️ Event Not Found",
+                description=f"No event named `{name}` was found.",
+                color=discord.Color.orange()
+            ))
+
+        save_all_events(self.all_events)
+        logger.info(f"🗑️ Deleted event '{name}' from guild {gid}")
+        await ctx.send(embed=make_embed(
+            title="🗑️ Event Deleted",
+            description=f"Successfully deleted event **{name}**.",
+            color=discord.Color.green()
+        ))
+
+    #by id
+    @commands.command(name="deleteeventid")
+    async def deleteeventid(self, ctx, event_id: int = None):
+        gid = str(ctx.guild.id)
+        events = get_guild_events(self.all_events, gid)
+
+        if event_id is None or event_id <= 0 or event_id > len(events):
+            return await ctx.send(embed=make_embed(
+                title="❌ Invalid ID",
+                description=f"Use `!listevents` to get the correct event ID, then run `!deleteeventid [ID]`.",
+                color=discord.Color.red()
+            ))
+
+        removed = events.pop(event_id - 1)
+        save_all_events(self.all_events)
+        logger.info(f"🗑️ Deleted event by ID: '{removed['name']}' from guild {gid}")
+        await ctx.send(embed=make_embed(
+            title="🗑️ Event Deleted",
+            description=f"Successfully deleted event **{removed['name']}**.",
+            color=discord.Color.green()
+        ))
+
+
     # ─── Command: Today's Events ─────────────────────────────────────────────
     @commands.command(name="todaysevents")
     async def todaysevents(self, ctx):
