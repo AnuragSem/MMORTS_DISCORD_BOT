@@ -32,34 +32,49 @@ class MiscCog(commands.Cog):
     @commands.command(name="help", help="Show all commands.")
     async def help_cmd(self, ctx):
         commands_list = [
-            "`!setchannel` – Set this channel for all announcements.",
-            "`!setserverclock HH:MM` – Set your server's current time.",
-            "`!setserverclock <DAY> HH:MM` – (Alt format) Set time + day.",
-            "`!setserverday <DAY>` – Adjust the server clock to treat today as Monday.",
-            "`!getservertime` – Check server time and UTC offset.",
-            "`!settimezone Region/City` – Set your personal timezone.",
-            "`!gettimezone` – View your timezone and local time.",
-            "`!addevent Day HH:MM Name|Info [--autodelete]` – Weekly event.",
-            "`!schedulecountdown <duration> Name|Info [--autodelete]` – One-time event.",
-            "`!editeventtime <ID> HH:MM` – Change time of weekly event.",
-            "`!editcountdown <ID> <duration>` – Change countdown duration.",
-            "`!listevents` – List all scheduled events.",
-            "`!todaysevents` – Show events scheduled for today only.",
-            "`!nextevent` – Show the next upcoming event.",
-            "`!checkautodelete <ID>` – Check if auto-delete is on.",
-            "`!toggleautodelete <ID>` – Toggle auto-delete for an event.",
-            "`!deleteevent <ID>` – Remove one event.",
-            "`!deleteallevents` – Wipe all events with confirmation.",
-            "`!nukeevents` – Instantly delete all events (no confirm).",
-            "`!listalltips` – Show all tips in this server.",
-            "`!addtip <tip>` – Add a tip (anyone can do it).",
-            "`!removetip <index>` – Remove tip by index (no restrictions)."
+            ("🕹️ Setup & Time Commands", "\u200b"),
+            ("`!setchannel`", "Set current channel for bot announcements."),
+            ("`!setserverclock HH:MM`", "Set your in-game server time."),
+            ("`!setserverclock Day HH:MM`", "Optionally set day as well."),
+            ("`!setserverday Day`", "Shift the in-game day to desired one."),
+            ("`!getservertime`", "Shows server time + offset from UTC."),
+            ("`!settimezone Region/City`", "Set your local timezone."),
+            ("`!gettimezone`", "View your local time info."),
+
+            ("📅 Event Scheduling", "\u200b"),
+            ("`!addevent Day HH:MM Name|Info [--autodelete]`", "Add a weekly recurring event."),
+            ("`!schedulecountdown [duration] Name|Info [--autodelete]`", "Add a one-time countdown event. Duration supports `1d 03:00` or `2:04:30`."),
+            ("`!listevents`", "List all weekly and countdown events."),
+            ("`!todaysevents`", "List events happening today."),
+            ("`!nextevent`", "Show the next event and time remaining."),
+
+            ("✏️ Edit Events", "\u200b"),
+            ("`!editweeklybyid ID [Day] HH:MM`", "Edit a weekly event’s time and/or day."),
+            ("`!editweeklybyname Name [Day] HH:MM`", "Edit all matching weekly events by name."),
+            ("`!editcountdownbyid ID [duration]`", "Edit countdown (1d 03:30 or 1:01:00)."),
+            ("`!editcountdownbyname Name [duration]`", "Edit all matching countdowns."),
+
+            ("🗑️ Delete Events", "\u200b"),
+            ("`!deleteevent ID`", "Delete a specific event by index."),
+            ("`!deleteeventbyname Name`", "Delete all events by name."),
+            ("`!deleteallweekly`", "Remove all weekly events."),
+            ("`!deleteallcountdowns`", "Remove all countdown events."),
+            ("`!deleteallevents`", "Remove all events (confirmation free)."),
+
+            ("🔁 Auto-Delete Tools", "\u200b"),
+            ("`!toggleautodelete ID`", "Enable/disable auto-delete for an event."),
+            ("`!checkautodelete ID`", "Check if an event has auto-delete on."),
+
+            ("🧠 Daily Tips", "\u200b"),
+            ("`!listalltips`", "Show all saved tips."),
+            ("`!addtip Tip text...`", "Add a new tip."),
+            ("`!removetip Index`", "Remove a tip by number."),
         ]
 
         embed = make_embed(
-            title="📚 Bot Commands",
-            description="Here’s everything I support:",
-            fields=[(cmd, "\u200b", False) for cmd in commands_list],
+            title="📚 Command Reference",
+            description="Here are all available commands grouped by category.",
+            fields=[(name, desc, False) for name, desc in commands_list],
             color=discord.Color.blue()
         )
         await ctx.send(embed=embed)
