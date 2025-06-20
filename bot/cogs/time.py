@@ -36,12 +36,19 @@ class TimeCog(commands.Cog):
             assert 0 <= h < 24 and 0 <= m < 60
 
             now_utc = datetime.datetime.utcnow().replace(second=0, microsecond=0)
-            target = now_utc.replace(hour=h, minute=m)
 
+            # Calculate target datetime based on provided time and (optional) day
             if day_name:
-                days_ahead = (list(calendar.day_name).index(day_name) - now_utc.weekday()) % 7
-                target += datetime.timedelta(days=days_ahead)
+                target_weekday = list(calendar.day_name).index(day_name)
+                current_weekday = now_utc.weekday()
+                days_ahead = (target_weekday - current_weekday) % 7
+            else:
+                days_ahead = 0
 
+            # Create target datetime safely
+            target = (now_utc + datetime.timedelta(days=days_ahead)).replace(hour=h, minute=m)
+
+            # Final offset in minutes
             offset_minutes = int((target - now_utc).total_seconds() / 60)
 
             self.config["server_offsets"][str(ctx.guild.id)] = offset_minutes
