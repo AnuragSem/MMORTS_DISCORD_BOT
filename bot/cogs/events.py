@@ -547,6 +547,65 @@ class EventsCog(commands.Cog):
             color=discord.Color.red()
         ))
 
+    @commands.command(name="listevents")
+    async def list_events(self, ctx):
+        gid = ctx.guild.id
+        offset = self.get_offset(gid)
+        now_utc = datetime.datetime.utcnow()
+        server_now = now_utc + datetime.timedelta(minutes=offset)
+
+        weekly = []
+        countdowns = []
+
+        # Gather Weekly Events
+        for event in self.config.get("weekly_events", []):
+            if event["guild_id"] != gid:
+                continue
+            try:
+                next_occurrence = next_event_datetime(event, server_now)
+                weekly.append((
+                    event["name"],
+                    f"{event['day']} {event['time']} → {next_occurrence.strftime('%A %H:%M')}"
+                ))
+            except Exception as e:
+                logger.warning(f"⚠️ Failed weekly event parse: {e}")
+
+        # Gather Countdown Events
+        for event in self.config.get("scheduled_events", []):
+            if event["guild_id"] != gid:
+                continue
+            try:
+                fire_time = datetime.datetime.fromisoformat(event["time"])
+                if fire_time > now_utc:
+                    server_fire = fire_time + datetime.timedelta(minutes=offset)
+                    countdowns.append((
+                        event["name"],
+                        f"{server_fire.strftime('%A %H:%M')} ({event.get('info', 'No info')})"
+                    ))
+            except Exception as e:
+                logger.warning(f"⚠️ Failed countdown event parse: {e}")
+
+        if not weekly and not countdowns:
+            return await ctx.send(embed=make_embed(
+                title="📭 No Events Found",
+                description="No countdown or weekly events scheduled.",
+                color=discord.Color.red()
+            ))
+
+        fields = []
+
+        if weekly:
+            fields.append(("📆 Weekly Events", "\n".join([f"• **{n}** — {t}" for n, t in weekly]), False))
+
+        if countdowns:
+            fields.append(("⏳ Countdown Events", "\n".join([f"• **{n}** — {t}" for n, t in countdowns]), False))
+
+        await ctx.send(embed=make_embed(
+            title="📋 Scheduled Events",
+            fields=fields,
+            color=discord.Color.blue()
+        ))
+
     # ─── Command: Today's Events ─────────────────────────────────────────────
     @commands.command(name="todaysevents")
     async def todaysevents(self, ctx):
