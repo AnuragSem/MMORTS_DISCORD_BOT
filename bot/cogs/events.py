@@ -547,43 +547,30 @@ class EventsCog(commands.Cog):
             color=discord.Color.red()
         ))
 
+    # ─── Command: List All Events ─────────────────────────────────────────
     @commands.command(name="listevents")
-    async def list_events(self, ctx):
-        gid = ctx.guild.id
-        offset = self.get_offset(gid)
+    async def listevents(self, ctx):
+        gid = str(ctx.guild.id)
+        events = get_guild_events(self.all_events, gid)
+        offset = self.config["server_offsets"].get(gid, 0)
         now_utc = datetime.datetime.utcnow()
         server_now = now_utc + datetime.timedelta(minutes=offset)
 
         weekly = []
         countdowns = []
 
-        # Gather Weekly Events
-        for event in self.config.get("weekly_events", []):
-            if event["guild_id"] != gid:
-                continue
+        for e in events:
             try:
-                next_occurrence = next_event_datetime(event, server_now)
-                weekly.append((
-                    event["name"],
-                    f"{event['day']} {event['time']} → {next_occurrence.strftime('%A %H:%M')}"
-                ))
-            except Exception as e:
-                logger.warning(f"⚠️ Failed weekly event parse: {e}")
-
-        # Gather Countdown Events
-        for event in self.config.get("scheduled_events", []):
-            if event["guild_id"] != gid:
-                continue
-            try:
-                fire_time = datetime.datetime.fromisoformat(event["time"])
-                if fire_time > now_utc:
-                    server_fire = fire_time + datetime.timedelta(minutes=offset)
-                    countdowns.append((
-                        event["name"],
-                        f"{server_fire.strftime('%A %H:%M')} ({event.get('info', 'No info')})"
-                    ))
-            except Exception as e:
-                logger.warning(f"⚠️ Failed countdown event parse: {e}")
+                if e.get("type") == "countdown":
+                    fire_time = datetime.datetime.fromisoformat(e["timestamp"])
+                    if fire_time > now_utc:
+                        server_fire = fire_time + datetime.timedelta(minutes=offset)
+                        countdowns.append(f"⏳ **{e['name']}** — {server_fire.strftime('%A %H:%M')} | {e.get('info', '')}")
+                elif e.get("type") == "normal":
+                    next_dt = next_event_datetime(e, server_now)
+                    weekly.append(f"📆 **{e['name']}** — {e['day']} {e['time']} → {next_dt.strftime('%A %H:%M')}")
+            except Exception as err:
+                logger.warning(f"❌ Failed to parse event `{e.get('name')}`: {err}")
 
         if not weekly and not countdowns:
             return await ctx.send(embed=make_embed(
@@ -592,17 +579,15 @@ class EventsCog(commands.Cog):
                 color=discord.Color.red()
             ))
 
-        fields = []
-
+        description = ""
         if weekly:
-            fields.append(("📆 Weekly Events", "\n".join([f"• **{n}** — {t}" for n, t in weekly]), False))
-
+            description += "**📆 Weekly Events:**\n" + "\n".join(weekly) + "\n\n"
         if countdowns:
-            fields.append(("⏳ Countdown Events", "\n".join([f"• **{n}** — {t}" for n, t in countdowns]), False))
+            description += "**⏳ Countdown Events:**\n" + "\n".join(countdowns)
 
         await ctx.send(embed=make_embed(
             title="📋 Scheduled Events",
-            fields=fields,
+            description=description.strip(),
             color=discord.Color.blue()
         ))
 
