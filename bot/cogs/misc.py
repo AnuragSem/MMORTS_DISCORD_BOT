@@ -29,55 +29,63 @@ class MiscCog(commands.Cog):
         ))
 
     # ─── Command: Help ────────────────────────────────────────────────────────
-    @commands.command(name="help", help="Show all commands.")
+    @commands.command(name="help", help="Show all available bot commands.")
     async def help_cmd(self, ctx):
-        commands_list = [
-            ("🕹️ Setup & Time Commands", "\u200b"),
-            ("`!setchannel`", "Set current channel for bot announcements."),
-            ("`!setserverclock HH:MM`", "Set your in-game server time."),
-            ("`!setserverclock Day HH:MM`", "Optionally set day as well."),
-            ("`!setserverday Day`", "Shift the in-game day to desired one."),
-            ("`!getservertime`", "Shows server time + offset from UTC."),
-            ("`!settimezone Region/City`", "Set your local timezone."),
-            ("`!gettimezone`", "View your local time info."),
+        try:
+            sections = [
+                ("🕹️ Setup & Time Commands", [
+                    "`!setchannel` - Set current channel for announcements.",
+                    "`!setserverclock HH:MM` - Set current in-game server time.",
+                    "`!setserverclock Day HH:MM` - Optional day setting too.",
+                    "`!setserverday Day` - Force server day manually.",
+                    "`!getservertime` - View current server time + offset.",
+                    "`!settimezone Region/City` - Set your local timezone.",
+                    "`!gettimezone` - View your current local timezone."
+                ]),
+                ("📅 Event Scheduling", [
+                    "`!addevent Day HH:MM Name|Info [--autodelete]` - Weekly event.",
+                    "`!schedulecountdown duration Name|Info [--autodelete]` - Countdown event.",
+                    "`!listevents` - Show all events.",
+                    "`!todaysevents` - Events happening today.",
+                    "`!nextevent` - The next upcoming event."
+                ]),
+                ("✏️ Edit Events", [
+                    "`!editweeklybyid ID [Day] HH:MM` - Edit by ID.",
+                    "`!editweeklybyname Name [Day] HH:MM` - Edit by name.",
+                    "`!editcountdownbyid ID duration` - Edit countdown by ID.",
+                    "`!editcountdownbyname Name duration` - Edit countdown by name."
+                ]),
+                ("🗑️ Delete Events", [
+                    "`!deleteevent ID` - Delete one event.",
+                    "`!deleteeventbyname Name` - Delete all with matching name.",
+                    "`!deleteallweekly` - Delete all weekly events.",
+                    "`!deleteallcountdowns` - Delete all countdowns.",
+                    "`!deleteallevents` - Nuke all events."
+                ]),
+                ("🔁 Auto-Delete Tools", [
+                    "`!toggleautodelete ID` - Toggle for event.",
+                    "`!checkautodelete ID` - Check auto-delete status."
+                ]),
+                ("🧠 Tips", [
+                    "`!addtip Text` - Add a new tip.",
+                    "`!removetip Index` - Remove by number.",
+                    "`!listalltips` - Show all saved tips."
+                ])
+            ]
 
-            ("📅 Event Scheduling", "\u200b"),
-            ("`!addevent Day HH:MM Name|Info [--autodelete]`", "Add a weekly recurring event."),
-            ("`!schedulecountdown [duration] Name|Info [--autodelete]`", "Add a one-time countdown event. Duration supports `1d 03:00` or `2:04:30`."),
-            ("`!listevents`", "List all weekly and countdown events."),
-            ("`!todaysevents`", "List events happening today."),
-            ("`!nextevent`", "Show the next event and time remaining."),
+            for title, lines in sections:
+                await ctx.send(embed=make_embed(
+                    title=title,
+                    description="\n".join(lines),
+                    color=discord.Color.blue()
+                ))
 
-            ("✏️ Edit Events", "\u200b"),
-            ("`!editweeklybyid ID [Day] HH:MM`", "Edit a weekly event’s time and/or day."),
-            ("`!editweeklybyname Name [Day] HH:MM`", "Edit all matching weekly events by name."),
-            ("`!editcountdownbyid ID [duration]`", "Edit countdown (1d 03:30 or 1:01:00)."),
-            ("`!editcountdownbyname Name [duration]`", "Edit all matching countdowns."),
-
-            ("🗑️ Delete Events", "\u200b"),
-            ("`!deleteevent ID`", "Delete a specific event by index."),
-            ("`!deleteeventbyname Name`", "Delete all events by name."),
-            ("`!deleteallweekly`", "Remove all weekly events."),
-            ("`!deleteallcountdowns`", "Remove all countdown events."),
-            ("`!deleteallevents`", "Remove all events (confirmation free)."),
-
-            ("🔁 Auto-Delete Tools", "\u200b"),
-            ("`!toggleautodelete ID`", "Enable/disable auto-delete for an event."),
-            ("`!checkautodelete ID`", "Check if an event has auto-delete on."),
-
-            ("🧠 Daily Tips", "\u200b"),
-            ("`!listalltips`", "Show all saved tips."),
-            ("`!addtip Tip text...`", "Add a new tip."),
-            ("`!removetip Index`", "Remove a tip by number."),
-        ]
-
-        embed = make_embed(
-            title="📚 Command Reference",
-            description="Here are all available commands grouped by category.",
-            fields=[(name, desc, False) for name, desc in commands_list],
-            color=discord.Color.blue()
-        )
-        await ctx.send(embed=embed)
+        except Exception as e:
+            await ctx.send(embed=make_embed(
+                title="❌ Help Error",
+                description=f"Something went wrong.\n```{str(e)}```",
+                color=discord.Color.red()
+            ))
 
     # ─── Auto Assign Default Channel on Guild Join ────────────────────────────
     @commands.Cog.listener()
