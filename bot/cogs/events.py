@@ -144,10 +144,15 @@ class EventsCog(commands.Cog):
                 ))
 
         target_day = list(calendar.day_name).index(day_clean)
-        event_time = server_now.replace(hour=h, minute=m, second=0, microsecond=0)
         days_ahead = (target_day - server_now.weekday()) % 7
-        event_time += datetime.timedelta(days=days_ahead)
 
+        # First move to the correct day
+        event_date = server_now.date() + datetime.timedelta(days=days_ahead)
+
+        # Then assign the correct time
+        event_time = datetime.datetime.combine(event_date, datetime.time(hour=h, minute=m))
+
+        # Now check
         if days_ahead == 0 and event_time < server_now:
             return await ctx.send(embed=make_embed(
                 title="⚠️ Time Already Passed",
@@ -186,9 +191,9 @@ class EventsCog(commands.Cog):
             ))
 
         try:
-            if any(c.isalpha() for c in duration):
+            if any(c.isalpha() for c in duration):  # "1d 02:30"
                 delta = parse_duration_string(duration)
-            else:
+            else:  # "00:02:00"
                 d, h, m = map(int, duration.strip().split(":"))
                 delta = datetime.timedelta(days=d, hours=h, minutes=m)
         except Exception as e:
@@ -213,12 +218,13 @@ class EventsCog(commands.Cog):
         name, info = map(str.strip, raw.split("|", 1))
         gid = str(ctx.guild.id)
         offset = self.config["server_offsets"].get(gid, 0)
+
         now_utc = datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
         server_now = now_utc + datetime.timedelta(minutes=offset)
-        fire_at = server_now + delta
+        fire_at_server = server_now + delta
+        fire_at_utc = fire_at_server - datetime.timedelta(minutes=offset)
 
-        # Reject if the scheduled time is already in the past
-        if fire_at < server_now:
+        if fire_at_server < server_now:
             return await ctx.send(embed=make_embed(
                 title="⚠️ Invalid Countdown Time",
                 description="This countdown would trigger in the past. Use a future duration.",
@@ -227,7 +233,7 @@ class EventsCog(commands.Cog):
 
         entry = {
             "type": "countdown",
-            "timestamp": fire_at.isoformat(),
+            "timestamp": fire_at_utc.isoformat(),
             "name": name,
             "info": info,
             "auto_delete": auto,
@@ -235,9 +241,9 @@ class EventsCog(commands.Cog):
         }
         get_guild_events(self.all_events, gid).append(entry)
         save_all_events(self.all_events)
-        logger.info(f"[COUNTDOWN] {name} scheduled for {fire_at} server time (offset {offset:+} min, UTC: {now_utc})")
+        logger.info(f"[COUNTDOWN] {name} scheduled for {fire_at_server} server time (offset {offset:+} min, UTC: {now_utc})")
 
-        desc = f"**{name}** will go live in `{duration}` at **{fire_at.strftime('%A %H:%M')}** server time."
+        desc = f"**{name}** will go live in `{duration}` at **{fire_at_server.strftime('%A %H:%M')}** server time."
         if auto:
             desc += "\n✅ Will auto-delete after firing."
 
